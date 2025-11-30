@@ -1,6 +1,10 @@
-from langchain_huggingface import HuggingFaceEmbeddings
-from transformers import AutoTokenizer
+from sentence_transformers import SentenceTransformer
+import numpy as np
 
-embeddings_model_path = "ibm-granite/granite-embedding-30m-english"
-embeddings_model = HuggingFaceEmbeddings(model_name=embeddings_model_path)
-embeddings_tokenizer = AutoTokenizer.from_pretrained(embeddings_model_path)
+_embedder = SentenceTransformer("all-MiniLM-L6-v2")
+
+def embed_text(text: str):
+    return _embedder.encode([text])[0].tolist()
+
+def embed_texts(texts):
+    return _embedder.encode(texts).tolist()

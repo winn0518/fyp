@@ -1,22 +1,11 @@
-from langchain_replicate import ChatReplicate
-from dotenv import load_dotenv
+# setup_model.py
 import os
-
+from dotenv import load_dotenv
 load_dotenv()
-REPLICATE_API_TOKEN = os.getenv("REPLICATE_API_TOKEN")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+if not OPENAI_API_KEY:
+    raise ValueError("❌ Missing OPENAI_API_KEY in environment (.env or env var)")
 
-model_path = "ibm-granite/granite-4.0-h-small"
-model = ChatReplicate(
-    model=model_path,
-    replicate_api_token=REPLICATE_API_TOKEN,
-    model_kwargs={"max_tokens": 1000, "min_tokens": 100},
-)
-
-from langchain_core.prompts import ChatPromptTemplate
-
-query = "Who won in the Pantoja vs Asakura fight at UFC 310?"
-prompt_template = ChatPromptTemplate.from_template("{input}")
-chain = prompt_template | model
-output = chain.invoke({"input": query})
-print(output.text())
-
+# We'll use langchain's ChatOpenAI wrapper
+from langchain.chat_models import ChatOpenAI
+llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0.0, max_tokens=1000)
