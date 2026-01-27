@@ -17,8 +17,27 @@ from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
 from langchain_community.embeddings import HuggingFaceEmbeddings
 
-# Document loaders
-from langchain_community.document_loaders import PyPDFLoader, TextLoader, Docx2txtLoader
+# Docling imports 
+try:
+    from docling.document_converter import DocumentConverter
+    
+    try:
+        from docling.document_converter import DocumentConverterConfig
+        HAS_DOCLING_CONFIG = True
+    except ImportError:
+        try:
+            from docling import DocumentConverterConfig
+            HAS_DOCLING_CONFIG = True
+        except ImportError:
+            HAS_DOCLING_CONFIG = False
+            print("Warning: DocumentConverterConfig not found, using default settings")
+except ImportError as e:
+    print(f"Error importing docling: {e}")
+    HAS_DOCLING = False
+else:
+    HAS_DOCLING = True
+
+# LangChain IBM integration
 from langchain_ibm import WatsonxLLM
 
 # Load environment variables
@@ -43,8 +62,44 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 persist_directory = ".chromadb"
 
+# Initialize Docling converter
+def get_docling_converter():
+    """Create and configure Docling document converter"""
+    if not HAS_DOCLING:
+        raise ImportError("Docling not installed")
+    
+    try:
+        if HAS_DOCLING_CONFIG:
+            
+            config = DocumentConverterConfig()
+            
+            config.do_table_structure = True
+            config.do_caption = True
+            config.do_figure_boundary = True
+            converter = DocumentConverter(config=config)
+        else:
+            
+            converter = DocumentConverter()
+            
+            if hasattr(converter, 'do_table_structure'):
+                converter.do_table_structure = True
+            if hasattr(converter, 'do_caption'):
+                converter.do_caption = True
+            if hasattr(converter, 'do_figure_boundary'):
+                converter.do_figure_boundary = True
+        
+        return converter
+    except Exception as e:
+        print(f"Error creating Docling converter: {e}")
+        
+        return DocumentConverter()
+
 # Allowed file extensions
-ALLOWED_EXTENSIONS = {'pdf', 'txt', 'docx'}
+ALLOWED_EXTENSIONS = {
+    'pdf', 'txt', 'docx', 'pptx', 
+    'html', 'htm', 'md', 'rtf',
+    'xlsx', 'xls', 'csv', 'tsv'
+}
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -103,26 +158,157 @@ def clear_database():
         print(f"Error clearing database: {e}")
     return False
 
-# Function to load documents based on file type
-def load_document(file_path, file_type):
-    """Load document based on file type"""
+def extract_text_from_docling_result(doc_result, original_filename):
+    """Extract text from Docling document result"""
+    documents = []
+    
     try:
-        if file_type == 'pdf':
-            loader = PyPDFLoader(file_path)
-            documents = loader.load()
-        elif file_type == 'txt':
-            loader = TextLoader(file_path, encoding='utf-8')
-            documents = loader.load()
-        elif file_type == 'docx':
-            loader = Docx2txtLoader(file_path)
-            documents = loader.load()
-        else:
-            return []
+        from langchain.schema import Document
+        
+        # 尝试获取文本内容
+        text_content = ""
+        
+        # 方法1: 尝试使用export_to_text
+        if hasattr(doc_result, 'export_to_text'):
+            try:
+                text_content = doc_result.export_to_text() or ""
+            except:
+                pass
+        
+        # 方法2: 尝试使用document属性
+        if not text_content and hasattr(doc_result, 'document'):
+            try:
+                if hasattr(doc_result.document, 'export_to_text'):
+                    text_content = doc_result.document.export_to_text() or ""
+                elif hasattr(doc_result.document, '__str__'):
+                    text_content = str(doc_result.document)
+            except:
+                pass
+        
+        # 方法3: 直接转换为字符串
+        if not text_content:
+            text_content = str(doc_result) if hasattr(doc_result, '__str__') else ""
+        
+        # 如果获取到了内容，创建文档
+        if text_content.strip():
+            doc = Document(
+                page_content=text_content,
+                metadata={
+                    "source": original_filename,
+                    "original_filename": original_filename,
+                    "format": "processed_with_docling"
+                }
+            )
+            documents.append(doc)
+            print(f"Extracted {len(text_content)} characters from {original_filename}")
+        
+    except Exception as e:
+        print(f"Error extracting text from docling result: {str(e)}")
+    
+    return documents
+
+def load_document_with_docling(file_path, original_filename):
+    """Load document using Docling"""
+    try:
+        if not HAS_DOCLING:
+            raise ImportError("Docling not available")
+        
+        print(f"Processing {original_filename} with Docling...")
+        
+        # 初始化Docling转换器
+        converter = get_docling_converter()
+        
+        # 转换文档
+        result = converter.convert(file_path)
+        
+        print(f"Successfully converted {original_filename}")
+        
+        # 提取文本
+        documents = extract_text_from_docling_result(result, original_filename)
         
         return documents
+        
     except Exception as e:
-        print(f"Error loading {file_type} file: {str(e)}")
-        return []
+        print(f"Error processing {original_filename} with Docling: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        
+        # 回退到基本文本提取
+        return load_document_fallback(file_path, original_filename)
+
+def load_document_fallback(file_path, original_filename):
+    """Fallback document loading when Docling fails"""
+    from langchain.schema import Document
+    documents = []
+    
+    try:
+        if original_filename.lower().endswith('.txt'):
+            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                content = f.read()
+                if content.strip():
+                    doc = Document(
+                        page_content=content,
+                        metadata={
+                            "source": original_filename,
+                            "original_filename": original_filename,
+                            "format": "fallback_txt"
+                        }
+                    )
+                    documents.append(doc)
+                    print(f"Fallback: Extracted {len(content)} characters from TXT file")
+                    
+        elif original_filename.lower().endswith('.pdf'):
+            # 使用PyPDF2作为PDF回退
+            try:
+                from PyPDF2 import PdfReader
+                reader = PdfReader(file_path)
+                content = ""
+                for page_num, page in enumerate(reader.pages):
+                    page_text = page.extract_text()
+                    if page_text:
+                        content += f"\n\n--- Page {page_num + 1} ---\n\n"
+                        content += page_text
+                
+                if content.strip():
+                    doc = Document(
+                        page_content=content,
+                        metadata={
+                            "source": original_filename,
+                            "original_filename": original_filename,
+                            "format": "fallback_pdf",
+                            "total_pages": len(reader.pages)
+                        }
+                    )
+                    documents.append(doc)
+                    print(f"Fallback: Extracted {len(content)} characters from PDF file")
+            except ImportError:
+                print("PyPDF2 not installed for PDF fallback")
+                
+        elif original_filename.lower().endswith('.docx'):
+            # 使用python-docx作为DOCX回退
+            try:
+                from docx import Document as DocxDocument
+                doc = DocxDocument(file_path)
+                content = "\n".join([paragraph.text for paragraph in doc.paragraphs])
+                
+                if content.strip():
+                    doc = Document(
+                        page_content=content,
+                        metadata={
+                            "source": original_filename,
+                            "original_filename": original_filename,
+                            "format": "fallback_docx"
+                        }
+                    )
+                    documents.append(doc)
+                    print(f"Fallback: Extracted {len(content)} characters from DOCX file")
+            except ImportError:
+                print("python-docx not installed for DOCX fallback")
+                
+    except Exception as e:
+        print(f"Fallback extraction failed: {str(e)}")
+    
+    return documents
 
 # Function to process documents
 def process_documents(file_paths):
@@ -131,30 +317,28 @@ def process_documents(file_paths):
     
     try:
         for file_path, original_filename in file_paths:
-            # Determine file type
-            if original_filename.lower().endswith('.pdf'):
-                file_type = 'pdf'
-            elif original_filename.lower().endswith('.txt'):
-                file_type = 'txt'
-            elif original_filename.lower().endswith('.docx'):
-                file_type = 'docx'
-            else:
-                continue
+            print(f"\n--- Processing {original_filename} ---")
             
-            documents = load_document(file_path, file_type)
+            # 首先尝试Docling
+            documents = []
+            if HAS_DOCLING:
+                documents = load_document_with_docling(file_path, original_filename)
+            
+            # 如果Docling失败或不可用，使用回退
+            if not documents:
+                print(f"Using fallback for {original_filename}")
+                documents = load_document_fallback(file_path, original_filename)
             
             if documents:
-                # Add metadata
-                for doc in documents:
-                    doc.metadata["source"] = original_filename
-                    doc.metadata["original_filename"] = original_filename
-                    if file_type == 'pdf' and 'page' in doc.metadata:
-                        doc.metadata["page_number"] = doc.metadata["page"] + 1
-                
+                print(f"Successfully extracted {len(documents)} document chunks from {original_filename}")
                 all_docs.extend(documents)
+            else:
+                print(f"Warning: No content extracted from {original_filename}")
         
     except Exception as e:
         print(f"Error processing documents: {str(e)}")
+        import traceback
+        traceback.print_exc()
     
     return all_docs
 
@@ -246,14 +430,19 @@ def upload_documents():
                 'message': 'No valid files uploaded'
             }), 400
         
+        print(f"\nStarting document processing for {len(file_paths)} files...")
+        print(f"Docling available: {HAS_DOCLING}")
+        
         # Process documents
         documents = process_documents(file_paths)
         
         if not documents:
             return jsonify({
                 'status': 'error',
-                'message': 'Failed to process documents'
+                'message': 'Failed to process documents. No content could be extracted.'
             }), 500
+        
+        print(f"\nTotal document sections extracted: {len(documents)}")
         
         # Split documents into chunks
         text_splitter = RecursiveCharacterTextSplitter(
@@ -264,13 +453,17 @@ def upload_documents():
         )
         splits = text_splitter.split_documents(documents)
         
+        print(f"Created {len(splits)} chunks from {len(documents)} document sections")
+        
         # Create and persist vector database
+        print("Creating vector database...")
         vectorstore = Chroma.from_documents(
             documents=splits,
             embedding=embeddings,
             persist_directory=persist_directory
         )
         vectorstore.persist()
+        print("Vector database created and persisted successfully")
         
         # Clean up uploaded files
         for file_path, _ in file_paths:
@@ -283,12 +476,17 @@ def upload_documents():
             'data': {
                 'files_processed': len(processed_files),
                 'total_chunks': len(splits),
-                'total_pages': len(documents),
-                'avg_chunk_size': sum(len(d.page_content) for d in splits)//len(splits) if splits else 0
+                'total_sections': len(documents),
+                'avg_chunk_size': sum(len(d.page_content) for d in splits)//len(splits) if splits else 0,
+                'used_docling': HAS_DOCLING
             }
         })
         
     except Exception as e:
+        print(f"Error in upload_documents: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        
         # Clean up any remaining files
         for file_path, _ in file_paths:
             if os.path.exists(file_path):
@@ -396,7 +594,7 @@ def ask_question():
             sources.append({
                 'id': i,
                 'source': doc.metadata.get('source', 'Unknown Document'),
-                'page': doc.metadata.get('page_number', doc.metadata.get('page', 'N/A')),
+                'format': doc.metadata.get('format', 'unknown'),
                 'content': doc.page_content[:500] + "..." if len(doc.page_content) > 500 else doc.page_content
             })
         
