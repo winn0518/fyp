@@ -1,4 +1,22 @@
-.env
+# Create .gitignore if it doesn't exist
+echo "# Python
 venv/
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+.Python
+env/
+.vscode/
+
+# Project files
+.env
+.chromadb/
+uploads/
+*.log
+*.sqlite3
+*.db
+
+# Operating System
+.DS_Store
+Thumbs.db" > .gitignore
