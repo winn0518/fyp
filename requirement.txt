@@ -1,50 +1,20 @@
-# Core Flask Framework
-Flask>=3.1.2
-Flask-CORS>=6.0.2
-python-dotenv>=1.2.1
-Werkzeug>=3.1.5
-
-# LangChain Ecosystem - Updated to match your local versions
+Flask==3.1.2
+Flask-CORS==6.0.2
+python-dotenv==1.2.1
+Werkzeug==3.1.5
 langchain==0.1.12
 langchain-community==0.0.38
 langchain-core==0.1.53
 langchain-text-splitters==0.0.2
 langchain-ibm==0.1.7
-
-# Document Processing
 docling==2.70.0
-docling-core==2.61.0
-PyPDF2==3.0.1
-pypdf==6.2.0
-python-docx==1.2.0
-
-# Vector Database and Embeddings
 chromadb==1.3.4
-sentence-transformers==5.2.0
-huggingface-hub==0.36.0
-
-# IBM Watson Integration
-ibm-watson-machine-learning==1.0.368
+sentence-transformers==2.2.2  # Use lighter version
+huggingface-hub==0.16.4
 ibm_watsonx_ai==1.4.11
-
-# Required dependencies for LangChain and embeddings
-tiktoken==0.12.0
-numpy==1.26.4
-pandas==2.1.4
-openpyxl==3.1.5
-lxml==6.0.2
-beautifulsoup4==4.14.3
-
-# HTTP/Requests
-requests==2.32.5
-aiohttp==3.13.2
-httpx==0.28.1
-
-# Pydantic (required by LangChain)
-pydantic==2.12.5
-pydantic-core==2.41.5
-
-# Other utilities
-tqdm==4.67.1
-filelock==3.20.0
-packaging==23.2
+tiktoken==0.5.2
+numpy==1.24.4
+pydantic==2.0.3
+requests==2.31.0
+PyPDF2==3.0.1
+python-docx==1.1.0
