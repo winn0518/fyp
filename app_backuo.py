@@ -10,12 +10,6 @@ import gc
 from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
 
-
-# Ensure uploads directory exists
-os.makedirs('uploads', exist_ok=True)
-os.makedirs('templates', exist_ok=True)
-
-
 # LangChain imports
 from langchain_community.vectorstores import Chroma
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -60,9 +54,6 @@ CORS(app)
 app.config['SECRET_KEY'] = 'your-secret-key-here'
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # 200MB max file size
-
-import logging
-logging.basicConfig(level=logging.INFO)
 
 # Create uploads directory if it doesn't exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -627,8 +618,11 @@ def ask_question():
         }), 500
 
 if __name__ == '__main__':
-    # Get port from environment variable (Render sets this)
-    port = int(os.environ.get('PORT', 5000))
+    # Create templates directory if it doesn't exist
+    os.makedirs('templates', exist_ok=True)
     
-    # Run the app
-    app.run(host='0.0.0.0', port=port, debug=False)
+    # Move webpage.html to templates directory
+    if os.path.exists('webpage.html'):
+        shutil.move('webpage.html', 'templates/webpage.html')
+    
+    app.run(debug=True, port=5000)
