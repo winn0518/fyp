@@ -3,9 +3,10 @@ Flask>=2.3.0
 Flask-CORS>=4.0.0
 python-dotenv>=1.0.0
 
-# LangChain Ecosystem
-langchain>=0.0.290
+# LangChain Ecosystem - Pinned versions for compatibility
+langchain>=0.0.346,<0.1.0
 langchain-community>=0.0.10
+langchain-text-splitters>=0.0.1
 langchain-ibm>=0.1.0
 
 # Document Processing
@@ -21,10 +22,8 @@ huggingface-hub>=0.19.0
 
 # IBM Watson Integration
 ibm-watson-machine-learning>=1.0.0
-langchain-ibm>=0.1.0
 
 # Optional/Additional (for fallback processing)
-streamlit>=1.22  # Optional if you plan to use Streamlit
 pandas>=1.5.0    # For CSV/Excel processing
 openpyxl>=3.0.0  # For Excel files
 beautifulsoup4>=4.12.0  # For HTML processing
@@ -34,3 +33,4 @@ lxml>=4.9.0      # XML/HTML parser
 Werkzeug>=2.3.0
 requests>=2.31.0
 numpy>=1.24.0
+tiktoken>=0.5.0  # For text tokenization (used by some LangChain splitters)
