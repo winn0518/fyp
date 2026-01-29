@@ -267,7 +267,7 @@ def load_document_fallback(file_path, original_filename):
                     print(f"Fallback: Extracted {len(content)} characters from TXT file")
                     
         elif original_filename.lower().endswith('.pdf'):
-            # 使用PyPDF2作为PDF回退
+            # Use PyPDF2 as PDF fallback
             try:
                 from PyPDF2 import PdfReader
                 reader = PdfReader(file_path)
@@ -294,7 +294,7 @@ def load_document_fallback(file_path, original_filename):
                 print("PyPDF2 not installed for PDF fallback")
                 
         elif original_filename.lower().endswith('.docx'):
-            # 使用python-docx作为DOCX回退
+            # Use python-docx 0.8.11 (downgraded version)
             try:
                 from docx import Document as DocxDocument
                 doc = DocxDocument(file_path)
