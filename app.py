@@ -294,25 +294,42 @@ def load_document_fallback(file_path, original_filename):
                 print("PyPDF2 not installed for PDF fallback")
                 
         elif original_filename.lower().endswith('.docx'):
-            # Use python-docx 0.8.11 (downgraded version)
+            # DOCX fallback using basic text extraction (no python-docx)
             try:
-                from docx import Document as DocxDocument
-                doc = DocxDocument(file_path)
-                content = "\n".join([paragraph.text for paragraph in doc.paragraphs])
+                # Simple ZIP-based extraction for DOCX
+                import zipfile
+                import xml.etree.ElementTree as ET
                 
-                if content.strip():
-                    doc = Document(
-                        page_content=content,
-                        metadata={
-                            "source": original_filename,
-                            "original_filename": original_filename,
-                            "format": "fallback_docx"
-                        }
-                    )
-                    documents.append(doc)
-                    print(f"Fallback: Extracted {len(content)} characters from DOCX file")
-            except ImportError:
-                print("python-docx not installed for DOCX fallback")
+                # DOCX is a ZIP file containing XML
+                with zipfile.ZipFile(file_path, 'r') as docx:
+                    # Extract document.xml from the DOCX
+                    if 'word/document.xml' in docx.namelist():
+                        xml_content = docx.read('word/document.xml').decode('utf-8', errors='ignore')
+                        # Simple text extraction from XML
+                        content = ""
+                        # Extract text between <w:t> tags (simplified)
+                        for line in xml_content.split('\n'):
+                            if '<w:t>' in line and '</w:t>' in line:
+                                start = line.find('<w:t>') + 5
+                                end = line.find('</w:t>', start)
+                                if start > 4 and end > start:
+                                    content += line[start:end] + " "
+                        
+                        if content.strip():
+                            doc = Document(
+                                page_content=content.strip(),
+                                metadata={
+                                    "source": original_filename,
+                                    "original_filename": original_filename,
+                                    "format": "fallback_docx_basic"
+                                }
+                            )
+                            documents.append(doc)
+                            print(f"Fallback: Extracted {len(content)} characters from DOCX file (basic extraction)")
+                    else:
+                        print("Warning: Could not find document.xml in DOCX file")
+            except Exception as e:
+                print(f"Basic DOCX extraction failed: {str(e)}")
                 
     except Exception as e:
         print(f"Fallback extraction failed: {str(e)}")
