@@ -1,22 +1,24 @@
-# Create .gitignore if it doesn't exist
-echo "# Python
-venv/
+# Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 .Python
 env/
-.vscode/
-
-# Project files
+venv/
 .env
-.chromadb/
-uploads/
-*.log
-*.sqlite3
-*.db
 
-# Operating System
+# Project specific
+uploads/
+.chromadb/
+chroma.sqlite3
+
+# OS
 .DS_Store
-Thumbs.db" > .gitignore
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
