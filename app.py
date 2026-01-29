@@ -17,11 +17,17 @@ os.makedirs('templates', exist_ok=True)
 
 
 # LangChain imports
-from langchain_community.vectorstores import Chroma
+from langchain.vectorstores import Chroma  # Changed from langchain_community
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain.embeddings import HuggingFaceEmbeddings  # Changed from langchain_community
+
+# LangChain IBM integration
+from langchain_ibm import WatsonxLLM
+
+# Remove or comment out: from langchain_community.vectorstores import Chroma
+# Remove or comment out: from langchain_community.embeddings import HuggingFaceEmbeddings
 
 # Docling imports 
 try:
@@ -293,43 +299,9 @@ def load_document_fallback(file_path, original_filename):
             except ImportError:
                 print("PyPDF2 not installed for PDF fallback")
                 
-        elif original_filename.lower().endswith('.docx'):
-            # DOCX fallback using basic text extraction (no python-docx)
-            try:
-                # Simple ZIP-based extraction for DOCX
-                import zipfile
-                import xml.etree.ElementTree as ET
-                
-                # DOCX is a ZIP file containing XML
-                with zipfile.ZipFile(file_path, 'r') as docx:
-                    # Extract document.xml from the DOCX
-                    if 'word/document.xml' in docx.namelist():
-                        xml_content = docx.read('word/document.xml').decode('utf-8', errors='ignore')
-                        # Simple text extraction from XML
-                        content = ""
-                        # Extract text between <w:t> tags (simplified)
-                        for line in xml_content.split('\n'):
-                            if '<w:t>' in line and '</w:t>' in line:
-                                start = line.find('<w:t>') + 5
-                                end = line.find('</w:t>', start)
-                                if start > 4 and end > start:
-                                    content += line[start:end] + " "
-                        
-                        if content.strip():
-                            doc = Document(
-                                page_content=content.strip(),
-                                metadata={
-                                    "source": original_filename,
-                                    "original_filename": original_filename,
-                                    "format": "fallback_docx_basic"
-                                }
-                            )
-                            documents.append(doc)
-                            print(f"Fallback: Extracted {len(content)} characters from DOCX file (basic extraction)")
-                    else:
-                        print("Warning: Could not find document.xml in DOCX file")
-            except Exception as e:
-                print(f"Basic DOCX extraction failed: {str(e)}")
+        # Remove DOCX handling since we don't have python-docx
+        # You can add basic DOCX handling without python-docx if needed
+        # (using zipfile to extract text from DOCX XML)
                 
     except Exception as e:
         print(f"Fallback extraction failed: {str(e)}")

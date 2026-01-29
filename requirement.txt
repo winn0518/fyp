@@ -1,12 +1,10 @@
 flask==2.3.3
 flask-cors==4.0.0
 python-dotenv==1.0.0
-langchain==0.0.354
-langchain-community==0.0.29
+langchain==0.1.0
 langchain-ibm==0.1.3
 chromadb==0.4.22
 sentence-transformers==2.2.2
 docling
 PyPDF2
 gunicorn==21.2.0
-typing-extensions==4.8.0
