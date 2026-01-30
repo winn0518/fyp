@@ -617,5 +617,6 @@ def ask_question():
 
 # Add this at the very end of app.py
 if __name__ == '__main__':
-    # Don't move webpage.html in production
-    app.run(host='0.0.0.0', port=10000, debug=False)
+    # Get port from environment variable or use 5000
+    port = int(os.environ.get('PORT', 10000))
+    app.run(host='0.0.0.0', port=port, debug=False)
