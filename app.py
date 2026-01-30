@@ -25,7 +25,12 @@ os.makedirs('templates', exist_ok=True)
 
 
 # LangChain imports
-from langchain.vectorstores import Chroma  # Changed from langchain_community
+# Try this import instead at line 28:
+try:
+    from langchain_community.vectorstores import Chroma
+except ImportError:
+    # Fallback to older version
+    from langchain.vectorstores import Chroma
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
