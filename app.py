@@ -64,7 +64,7 @@ else:
     RecursiveCharacterTextSplitter = type('DummySplitter', (), {})
     HuggingFaceEmbeddings = type('DummyEmbeddings', (), {})
 # LangChain IBM integration
-from langchain_ibm import WatsonxLLM
+#from langchain_ibm import WatsonxLLM
 
 # Remove or comment out: from langchain_community.vectorstores import Chroma
 # Remove or comment out: from langchain_community.embeddings import HuggingFaceEmbeddings
