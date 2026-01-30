@@ -7,7 +7,15 @@ import tempfile
 import time
 import json
 import gc
-from dotenv import load_dotenv
+# dotenv import - with fallback for production
+try:
+    from dotenv import load_dotenv
+    load_dotenv()  # This will load .env if it exists
+except ImportError:
+    print("dotenv not installed, using environment variables directly")
+    pass  # In production, environment variables are set directly
+except Exception as e:
+    print(f"dotenv error: {e}, using environment variables directly")
 from werkzeug.utils import secure_filename
 
 
