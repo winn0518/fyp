@@ -1,30 +1,16 @@
 # Core Flask
-Flask==2.3.3
-flask-cors==4.0.0
+Flask==2.3.0
+flask-cors==3.0.10
 gunicorn==20.1.0
 
-# Data processing
-pandas==1.5.3
-numpy==1.23.5
+# Basic utilities
+python-dotenv==0.19.2
 
-# LangChain - use older compatible versions
-langchain==0.0.235  # Much older but stable
-langchain-community==0.0.1  # Minimal version
+# Minimal LangChain - avoid complex deps for now
+langchain==0.0.200
 
 # OpenAI
-openai==0.27.8
+openai==0.28.0
 
-# ChromaDB - older version
-chromadb==0.3.29
-
-# Required for LangChain
-aiohttp==3.8.4  # Critical: This version works with Python 3.9
-async-timeout==4.0.2
-tiktoken==0.4.0
-
-# Document processing
-pypdf==3.10.0
-python-dotenv==1.0.0
-
-# Skip these for now if not absolutely needed:
-# torch, transformers, sentence-transformers, scikit-learn, matplotlib, seaborn
+# Skip heavy dependencies initially
+# pandas, numpy, matplotlib, etc.

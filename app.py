@@ -26,16 +26,43 @@ os.makedirs('templates', exist_ok=True)
 
 # LangChain imports
 # Try this import instead at line 28:
-try:
-    from langchain_community.vectorstores import Chroma
-except ImportError:
+#try:
+ #   from langchain_community.vectorstores import Chroma
+#except ImportError:
     # Fallback to older version
-    from langchain.vectorstores import Chroma
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.chains import RetrievalQA
-from langchain.prompts import PromptTemplate
-from langchain.embeddings import HuggingFaceEmbeddings  # Changed from langchain_community
+    #from langchain.vectorstores import Chroma
+#from langchain.text_splitter import RecursiveCharacterTextSplitter
+#from langchain.chains import RetrievalQA
+#from langchain.prompts import PromptTemplate
+#from langchain.embeddings import HuggingFaceEmbeddings  # Changed from langchain_community
+# TEMPORARY: Disable LangChain imports for deployment
+LANGCHAIN_ENABLED = False
 
+if LANGCHAIN_ENABLED:
+    try:
+        from langchain.chains import RetrievalQA
+        from langchain.vectorstores import Chroma
+        from langchain.text_splitter import RecursiveCharacterTextSplitter
+        from langchain.embeddings import HuggingFaceEmbeddings
+    except ImportError as e:
+        print(f"LangChain import error: {e}")
+        LANGCHAIN_ENABLED = False
+else:
+    # Create dummy classes
+    class DummyRetrievalQA:
+        def __call__(self, *args, **kwargs):
+            return {"result": "AI features disabled for deployment"}
+    
+    class DummyChroma:
+        def from_documents(self, *args, **kwargs):
+            return self
+        def as_retriever(self, *args, **kwargs):
+            return []
+    
+    RetrievalQA = DummyRetrievalQA
+    Chroma = DummyChroma
+    RecursiveCharacterTextSplitter = type('DummySplitter', (), {})
+    HuggingFaceEmbeddings = type('DummyEmbeddings', (), {})
 # LangChain IBM integration
 from langchain_ibm import WatsonxLLM
 
