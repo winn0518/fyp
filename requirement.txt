@@ -1,28 +1,30 @@
-# Core Flask - keep these
+# Core Flask
 Flask==2.3.3
 flask-cors==4.0.0
-
-# Production server
 gunicorn==20.1.0
 
-# Basic data processing (skip heavy ones initially)
-pandas==1.5.3  # Use older, lighter version
-numpy==1.24.3
+# Data processing
+pandas==1.5.3
+numpy==1.23.5
 
-# LangChain - minimal version
-langchain==0.0.350  # Use specific older version that's stable
+# LangChain - use older compatible versions
+langchain==0.0.235  # Much older but stable
+langchain-community==0.0.1  # Minimal version
 
-# OpenAI (if using)
-openai==0.28.1  # Older stable version
+# OpenAI
+openai==0.27.8
 
-# ChromaDB - minimal
-chromadb==0.4.18  # Older version
+# ChromaDB - older version
+chromadb==0.3.29
 
-# Required by ChromaDB
-pypdf==3.17.0
+# Required for LangChain
+aiohttp==3.8.4  # Critical: This version works with Python 3.9
+async-timeout==4.0.2
+tiktoken==0.4.0
 
-# Environment
+# Document processing
+pypdf==3.10.0
 python-dotenv==1.0.0
 
-# Remove these heavy dependencies for now:
-# matplotlib, seaborn, scikit-learn, scipy, torch, transformers, sentence-transformers
+# Skip these for now if not absolutely needed:
+# torch, transformers, sentence-transformers, scikit-learn, matplotlib, seaborn
