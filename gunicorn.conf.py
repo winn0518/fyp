@@ -1,12 +1,3 @@
-import os
-
-workers = 1
-worker_class = 'sync'
-worker_connections = 1000
+bind = "0.0.0.0:10000"
+workers = 2
 timeout = 120
-keepalive = 5
-threads = 4
-bind = f"0.0.0.0:{os.environ.get('PORT', '10000')}"
-accesslog = '-'
-errorlog = '-'
-loglevel = 'info'
