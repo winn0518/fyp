@@ -7,67 +7,15 @@ import tempfile
 import time
 import json
 import gc
-# dotenv import - with fallback for production
-try:
-    from dotenv import load_dotenv
-    load_dotenv()  # This will load .env if it exists
-except ImportError:
-    print("dotenv not installed, using environment variables directly")
-    pass  # In production, environment variables are set directly
-except Exception as e:
-    print(f"dotenv error: {e}, using environment variables directly")
+from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
 
-
-# Ensure uploads directory exists
-os.makedirs('uploads', exist_ok=True)
-os.makedirs('templates', exist_ok=True)
-
-
 # LangChain imports
-# Try this import instead at line 28:
-#try:
- #   from langchain_community.vectorstores import Chroma
-#except ImportError:
-    # Fallback to older version
-    #from langchain.vectorstores import Chroma
-#from langchain.text_splitter import RecursiveCharacterTextSplitter
-#from langchain.chains import RetrievalQA
-#from langchain.prompts import PromptTemplate
-#from langchain.embeddings import HuggingFaceEmbeddings  # Changed from langchain_community
-# TEMPORARY: Disable LangChain imports for deployment
-LANGCHAIN_ENABLED = False
-
-if LANGCHAIN_ENABLED:
-    try:
-        from langchain.chains import RetrievalQA
-        from langchain.vectorstores import Chroma
-        from langchain.text_splitter import RecursiveCharacterTextSplitter
-        from langchain.embeddings import HuggingFaceEmbeddings
-    except ImportError as e:
-        print(f"LangChain import error: {e}")
-        LANGCHAIN_ENABLED = False
-else:
-    # Create dummy classes
-    class DummyRetrievalQA:
-        def __call__(self, *args, **kwargs):
-            return {"result": "AI features disabled for deployment"}
-    
-    class DummyChroma:
-        def from_documents(self, *args, **kwargs):
-            return self
-        def as_retriever(self, *args, **kwargs):
-            return []
-    
-    RetrievalQA = DummyRetrievalQA
-    Chroma = DummyChroma
-    RecursiveCharacterTextSplitter = type('DummySplitter', (), {})
-    HuggingFaceEmbeddings = type('DummyEmbeddings', (), {})
-# LangChain IBM integration
-#from langchain_ibm import WatsonxLLM
-
-# Remove or comment out: from langchain_community.vectorstores import Chroma
-# Remove or comment out: from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.vectorstores import Chroma
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.chains import RetrievalQA
+from langchain.prompts import PromptTemplate
+from langchain_community.embeddings import HuggingFaceEmbeddings
 
 # Docling imports 
 try:
@@ -106,9 +54,6 @@ CORS(app)
 app.config['SECRET_KEY'] = 'your-secret-key-here'
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # 200MB max file size
-
-import logging
-logging.basicConfig(level=logging.INFO)
 
 # Create uploads directory if it doesn't exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -313,7 +258,7 @@ def load_document_fallback(file_path, original_filename):
                     print(f"Fallback: Extracted {len(content)} characters from TXT file")
                     
         elif original_filename.lower().endswith('.pdf'):
-            # Use PyPDF2 as PDF fallback
+            # 使用PyPDF2作为PDF回退
             try:
                 from PyPDF2 import PdfReader
                 reader = PdfReader(file_path)
@@ -339,9 +284,26 @@ def load_document_fallback(file_path, original_filename):
             except ImportError:
                 print("PyPDF2 not installed for PDF fallback")
                 
-        # Remove DOCX handling since we don't have python-docx
-        # You can add basic DOCX handling without python-docx if needed
-        # (using zipfile to extract text from DOCX XML)
+        elif original_filename.lower().endswith('.docx'):
+            # 使用python-docx作为DOCX回退
+            try:
+                from docx import Document as DocxDocument
+                doc = DocxDocument(file_path)
+                content = "\n".join([paragraph.text for paragraph in doc.paragraphs])
+                
+                if content.strip():
+                    doc = Document(
+                        page_content=content,
+                        metadata={
+                            "source": original_filename,
+                            "original_filename": original_filename,
+                            "format": "fallback_docx"
+                        }
+                    )
+                    documents.append(doc)
+                    print(f"Fallback: Extracted {len(content)} characters from DOCX file")
+            except ImportError:
+                print("python-docx not installed for DOCX fallback")
                 
     except Exception as e:
         print(f"Fallback extraction failed: {str(e)}")
@@ -655,8 +617,12 @@ def ask_question():
             'message': f'Error processing question: {str(e)}'
         }), 500
 
-# Add this at the very end of app.py
 if __name__ == '__main__':
-    # Get port from environment variable or use 5000
-    port = int(os.environ.get('PORT', 10000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    # Create templates directory if it doesn't exist
+    os.makedirs('templates', exist_ok=True)
+    
+    # Move webpage.html to templates directory
+    if os.path.exists('webpage.html'):
+        shutil.move('webpage.html', 'templates/webpage.html')
+    
+    app.run(debug=True, port=5000)
